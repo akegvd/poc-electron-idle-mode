@@ -1,5 +1,4 @@
-const { app, BrowserWindow, ipcMain, powerMonitor } = require("electron");
-const path = require("path");
+const { app, BrowserWindow, powerMonitor } = require("electron");
 
 let mainWindow;
 let idleTime = 0;

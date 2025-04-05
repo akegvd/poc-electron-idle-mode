@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, powerMonitor } = require("electron");
 const path = require("path");
 
 let mainWindow;
@@ -7,34 +7,53 @@ const IDLE_THRESHOLD = 5; // 5 seconds of inactivity
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      webviewTag: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
 
   mainWindow.loadFile("index.html");
 
-  // Check for user activity
+  // Check for system idle state
+  powerMonitor.on("suspend", () => {
+    mainWindow.webContents.send("user-idle", "System suspended");
+  });
+
+  powerMonitor.on("resume", () => {
+    mainWindow.webContents.send("user-active");
+  });
+
+  // Check for screen lock/unlock
+  powerMonitor.on("lock-screen", () => {
+    mainWindow.webContents.send("user-idle", "Screen locked");
+  });
+
+  powerMonitor.on("unlock-screen", () => {
+    mainWindow.webContents.send("user-active");
+  });
+
+  // Check for system idle time
   setInterval(() => {
-    idleTime++;
-    if (idleTime >= IDLE_THRESHOLD) {
-      mainWindow.webContents.send("user-idle", idleTime);
+    const idleState = powerMonitor.getSystemIdleState(1);
+    if (idleState === "idle") {
+      idleTime++;
+      if (idleTime >= IDLE_THRESHOLD) {
+        mainWindow.webContents.send(
+          "user-idle",
+          `System idle for ${idleTime} seconds`
+        );
+      }
+    } else {
+      idleTime = 0;
+      mainWindow.webContents.send("user-active");
     }
   }, 1000);
-
-  // Reset idle time on user activity
-  mainWindow.on("mousemove", () => {
-    idleTime = 0;
-    mainWindow.webContents.send("user-active");
-  });
-
-  mainWindow.on("keydown", () => {
-    idleTime = 0;
-    mainWindow.webContents.send("user-active");
-  });
 }
 
 app.whenReady().then(createWindow);

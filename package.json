@@ -1,15 +1,16 @@
 {
-    "name": "electron-idle-poc",
+    "name": "electron-idle-poc-monorepo",
     "version": "1.0.0",
-    "description": "Electron app with user idle detection",
-    "main": "main.js",
+    "private": true,
+    "workspaces": [
+        "apps/*"
+    ],
     "scripts": {
-        "start": "electron .",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "dev:web": "cd apps/web && npm run dev",
+        "dev:electron": "cd apps/electron && npm start",
+        "dev": "concurrently \"npm run dev:web\" \"npm run dev:electron\""
     },
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "electron": "^28.1.0"
+    "devDependencies": {
+        "concurrently": "^8.2.2"
     }
 }

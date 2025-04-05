@@ -2,6 +2,8 @@ const { app, BrowserWindow, powerMonitor } = require("electron");
 
 let mainWindow;
 let idleTime = 0;
+let wasIdle = false;
+
 const IDLE_THRESHOLD = 5; // 5 seconds of inactivity
 
 function createWindow() {
@@ -22,6 +24,7 @@ function createWindow() {
   // Check for system idle state
   powerMonitor.on("suspend", () => {
     mainWindow.webContents.send("user-idle", "System suspended");
+    refreshWebview();
   });
 
   powerMonitor.on("resume", () => {
@@ -31,6 +34,7 @@ function createWindow() {
   // Check for screen lock/unlock
   powerMonitor.on("lock-screen", () => {
     mainWindow.webContents.send("user-idle", "Screen locked");
+    refreshWebview();
   });
 
   powerMonitor.on("unlock-screen", () => {
@@ -42,17 +46,37 @@ function createWindow() {
     const idleState = powerMonitor.getSystemIdleState(1);
     if (idleState === "idle") {
       idleTime++;
-      if (idleTime >= IDLE_THRESHOLD) {
+
+      const isOverThreshold = idleTime >= IDLE_THRESHOLD;
+
+      if (isOverThreshold && !wasIdle) {
+        wasIdle = true;
+        refreshWebview();
+      }
+
+      if (isOverThreshold) {
         mainWindow.webContents.send(
           "user-idle",
           `System idle for ${idleTime} seconds`
         );
       }
     } else {
+      if (wasIdle) {
+        wasIdle = false;
+        mainWindow.webContents.send("user-active");
+      }
       idleTime = 0;
-      mainWindow.webContents.send("user-active");
     }
   }, 1000);
+}
+
+function refreshWebview() {
+  if (mainWindow) {
+    console.log("refreshing webview");
+    mainWindow.webContents.executeJavaScript(`
+      document.querySelector('webview')?.reload();
+    `);
+  }
 }
 
 app.whenReady().then(createWindow);

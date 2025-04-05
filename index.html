@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electron Idle Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .status {
+            font-size: 24px;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .active {
+            color: green;
+        }
+        .idle {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="status" id="status">User Status: Active</div>
+    <div id="idleTime">Idle Time: 0 seconds</div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const statusElement = document.getElementById('status');
+        const idleTimeElement = document.getElementById('idleTime');
+
+        ipcRenderer.on('user-idle', (event, time) => {
+            statusElement.textContent = 'User Status: Idle';
+            statusElement.className = 'status idle';
+            idleTimeElement.textContent = `Idle Time: ${time} seconds`;
+        });
+
+        ipcRenderer.on('user-active', () => {
+            statusElement.textContent = 'User Status: Active';
+            statusElement.className = 'status active';
+            idleTimeElement.textContent = 'Idle Time: 0 seconds';
+        });
+    </script>
+</body>
+</html>
